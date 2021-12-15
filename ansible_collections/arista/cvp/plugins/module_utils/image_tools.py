@@ -49,13 +49,37 @@ class CvImageTools():
         self.__cv_client = cv_connection
         self.__ansible = ansible_module
         self.__check_mode = check_mode
-        self._images = self.__get_images()
-        self._imageBundles = self.__get_image_bundles()
+        self._images = list()
+        self._imageBundles = list()
+        self.refresh_cvp_image_data()
+ 
  
     def __get_images(self):
-        pass
+        images = []
+    
+        MODULE_LOGGER.debug('  -> Collecting images')
+        images = self.__cv_client.api.get_images()['data']
+        if len(images) > 0:
+            self._images = images
+            return True
+        return False
+
+
     def __get_image_bundles(self):
-        pass
+        imageBundles = []
+        MODULE_LOGGER.debug('  -> Collecting image bundles')
+        imageBundles = self.__cv_client.api.get_image_bundles()['data']
+        if len(imageBundles) > 0:
+            self._imageBundles = imageBundles
+            return True
+        return False
+
+
+    def refresh_cvp_image_data(self):
+        self._images = self.__get_images()
+        self._imageBundles = self.__get_image_bundles()
+        return None   
+
 
     def is_image_present(self, image):
         """
@@ -74,9 +98,9 @@ class CvImageTools():
     
         for entry in self._images:
             if entry["imageFileName"] == os.path.basename(image):
-                return True
-                    
+                return True            
         return False
+
 
     def does_bundle_exist(self, bundle):
         """
@@ -117,7 +141,6 @@ class CvImageTools():
             if entry["name"] == bundle:
                 return entry["key"]
         return None
-
 
 
     def build_image_list(self, image_list):
@@ -185,8 +208,8 @@ class CvImageTools():
         
         if mode == "images":
             if action == "get":
-                data = self.__get_images()
-                return changed, data, warnings
+                self.refresh_cvp_image_data()
+                return changed, self._images, warnings
 
             
             elif action == "add":
@@ -194,7 +217,8 @@ class CvImageTools():
                     if self.is_image_present(image) is False:
                         MODULE_LOGGER.debug("Image not present. Trying to add.")
                         try:
-                            self._images.append(self.__cv_client.api.add_image(image))
+                            data = self.__cv_client.api.add_image(image)
+                            self.refresh_cvp_image_data()
                             MODULE_LOGGER.debug(data)
                             changed = True
                         except Exception as e:
@@ -210,8 +234,8 @@ class CvImageTools():
         # So we are dealing with bundles rather than images
         else:
             if action == "get":
-                data = self.__get_image_bundles()
-                return changed, data, warnings
+                data = self.refresh_cvp_image_data()
+                return changed, self._imageBundles, warnings
             
             elif action == "add":
                 # There are basically 2 actions - either we are adding a new bundle (save)
@@ -225,6 +249,7 @@ class CvImageTools():
                             response = self.__cv_client.api.update_image_bundle( key, bundle_name, images )
                             changed = True
                             data = response['data']
+                            self.refresh_cvp_image_data()
                         except Exception as e:
                             self.__ansible.module.fail_json( msg="%s" % str(e) )
                     
@@ -241,12 +266,12 @@ class CvImageTools():
                             response = self.__cv_client.api.save_image_bundle( bundle_name, images )
                             changed = True
                             data = response['data']
+                            self.refresh_cvp_image_data()
                         except Exception as e:
                             self.__ansible.module.fail_json( msg="%s" % str(e) )
 
                     else:
-                        self.__ansible.module.fail_json(msg="Unable to create bundle - images not present on server")                    
-                    # create bundle
+                        self.__ansible.module.fail_json(msg="Unable to create bundle - images not present on server")
                     
                     return changed, data, warnings
                 
@@ -258,6 +283,7 @@ class CvImageTools():
                         response = self.__cv_client.client.api.delete_image_bundle(key,bundle_name )
                         changed = True
                         data = response['data']
+                        self.refresh_cvp_image_data()
                     except Exception as e:
                             self.__ansible.module.fail_json( msg="%s" % str(e) )
                 else:
