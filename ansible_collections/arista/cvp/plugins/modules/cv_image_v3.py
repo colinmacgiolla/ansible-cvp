@@ -93,7 +93,6 @@ def main():
     main entry point for module execution.
     """
     argument_spec = dict(
-        cvp_facts=dict(type='dict', required=True),
         image=dict(type='str'),
         image_list=dict(type="list", elements='str'),
         bundle_name=dict(type='str'),
