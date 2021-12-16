@@ -291,6 +291,6 @@ class CvImageTools():
                     
             else:
                 # You have reached a logically impossible state
-                pass
+                warnings.append("You have reached a logically impossible state")
                 
         return changed, data, warnings
