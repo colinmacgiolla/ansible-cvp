@@ -33,39 +33,36 @@ EXAMPLES = r"""
   vars:
 
   tasks:
-    - name: "Gather CVP facts {{inventory_hostname}}"
-      arista.cvp.cv_facts:
-        facts:
-          images
-      register: cv_facts
-
+    - name: "Gather CVP image information facts {{inventory_hostname}}"
+      arista.cvp.cv_image_v3:
+         mode: images
+         action: get
+      register: image_data
 
     - name: "Print out facts from {{inventory_hostname}}"
       debug:
-        msg: "{{cv_facts}}"
+        msg: "{{image_data}}"
 
 
-
-    - name: "Get CVP images {{inventory_hostname}}"
-      arista.cvp.cv_image:
-        mode: images
-        cvp_facts: '{{cv_facts.ansible_facts}}'
-
-      register: image_facts
+    - name: "Get CVP image image bundles {{inventory_hostname}}"
+      arista.cvp.cv_image_v3:
+        mode: bundles
+        action: get
+      register: image_bundle_data
 
     - name: "Print out images from {{inventory_hostname}}"
       debug:
-        msg: "{{image_facts}}"
+        msg: "{{image_bundle_data}}"
+
 
     - name: "Update an image bundle {{inventory_hostname}}"
-      arista.cvp.cv_image:
+      arista.cvp.cv_image_v3:
         mode: bundles
         action: add
         bundle_name: Test_bundle
-        image_list: 
+        image_list:
            - TerminAttr-1.16.4-1.swix
            - EOS-4.25.4M.swi
-
 
 """
 
