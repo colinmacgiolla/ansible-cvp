@@ -103,12 +103,14 @@ class CvImageTools():
         return False
 
 
-    def does_bundle_exist(self, bundle):
+    def does_bundle_exist(self, bundle_list, bundle):
         """
         Checks if a named bundle already exists
 
         Parameters
         ----------
+        bundle_list: list
+            Internal CVP bundle list
         bundle : str
             Name of software image bundle.
 
@@ -117,7 +119,7 @@ class CvImageTools():
         Bool:
             True if present, False if not
         """
-        for entry in self._imageBundles:
+        for entry in bundle_list:
             if entry["name"] == bundle:
                 return True
         return False
@@ -144,12 +146,14 @@ class CvImageTools():
         return None
 
 
-    def build_image_list(self, image_list):
+    def build_image_list(self, cvp_images, image_list):
         """
         Builds a list of the image data structures, for a given list of image names.
 
         Parameters
         ----------
+        cvp_images: list
+            CVP internal image list
         image_list : list
             List of software image names
 
@@ -163,7 +167,7 @@ class CvImageTools():
         success = True
         
         for entry in image_list:
-            for image in self._images:
+            for image in cvp_images:
                 if image["imageFileName"] == entry:
                     image_data = image
                     
@@ -216,7 +220,7 @@ class CvImageTools():
                 cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
                 
                 
-                return changed, {'images':self._images,'image_bundle': self._imageBundles } , warnings
+                return changed, {'images':cvp_images } , warnings
 
             
             elif action == "add" and self.__check_mode == False:
@@ -242,15 +246,15 @@ class CvImageTools():
         else:
             if action == "get":
                 data = self.refresh_cvp_image_data()
-                return changed, self._imageBundles, warnings
+                return changed, {'bundles':cvp_image_bundles }, warnings
             
             elif action == "add" and self.__check_mode == False:
                 # There are basically 2 actions - either we are adding a new bundle (save)
                 # or changing an existing bundle (update)
-                if self.does_bundle_exist(bundle_name):
+                if self.does_bundle_exist(cvp_image_bundles, bundle_name):
                     warnings.append('Note that when updating a bundle, all the images to be used in the bundle must be listed')
                     key = self.get_bundle_key(bundle_name)
-                    images = self.build_image_list(image_list)
+                    images = self.build_image_list( cvp_images, image_list )
                     if images is not None:
                         try:
                             response = self.__cv_client.api.update_image_bundle( key, bundle_name, images )
