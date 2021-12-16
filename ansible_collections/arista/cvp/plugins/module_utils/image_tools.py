@@ -276,6 +276,7 @@ class CvImageTools():
                     if images is not None:
                         try:
                             response = self.__cv_client.api.save_image_bundle( bundle_name, images )
+                            MODULE_LOGGER.debug(response)
                             changed = True
                             data = response['data']
                             cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
