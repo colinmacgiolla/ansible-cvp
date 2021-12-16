@@ -182,7 +182,7 @@ class CvImageTools():
                 success = False
         
         if success:
-            return image_list
+            return internal_image_list
         else:
             return None
 
@@ -234,13 +234,13 @@ class CvImageTools():
                             MODULE_LOGGER.debug(data)
                             changed = True
                         except Exception as e:
-                            self.__ansible.module.fail_json( msg="%s" % str(e))
+                            self.__ansible.fail_json( msg="%s" % str(e))
                     else:
-                        self.__ansible.module.fail_json(msg="Same image name already exists on the system")
+                        self.__ansible.fail_json(msg="Same image name already exists on the system")
                 else:
-                    self.__ansible.module.fail_json(msg="Specified file ({}) does not exist".format(image) )
+                    self.__ansible.fail_json(msg="Specified file ({}) does not exist".format(image) )
             else:
-                self.__ansible.module.fail_json(msg="Deletion of images through API is not currently supported")
+                self.__ansible.fail_json(msg="Deletion of images through API is not currently supported")
 
 
         # So we are dealing with bundles rather than images
@@ -263,10 +263,10 @@ class CvImageTools():
                             data = response['data']
                             cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
                         except Exception as e:
-                            self.__ansible.module.fail_json( msg="%s" % str(e) )
+                            self.__ansible.fail_json( msg="%s" % str(e) )
                     
                     else:
-                        self.__ansible.module.fail_json(msg="Unable to update bundle - images not present on server")
+                        self.__ansible.fail_json(msg="Unable to update bundle - images not present on server")
                             
                     return changed, data, warnings
                         
@@ -285,7 +285,7 @@ class CvImageTools():
                             self.__ansible.fail_json( msg="%s" % str(e) )
 
                     else:
-                        self.__ansible.module.fail_json(msg="Unable to create bundle - images not present on server")
+                        self.__ansible.fail_json(msg="Unable to create bundle - images not present on server")
                     
                     return changed, data, warnings
                 
@@ -299,9 +299,9 @@ class CvImageTools():
                         data = response['data']
                         cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
                     except Exception as e:
-                            self.__ansible.module.fail_json( msg="%s" % str(e) )
+                            self.__ansible.fail_json( msg="%s" % str(e) )
                 else:
-                    self.__ansible.module.fail_json(msg="Unable to delete bundle - not found")
+                    self.__ansible.fail_json(msg="Unable to delete bundle - not found")
                     
             else:
                 # You have reached a logically impossible state
