@@ -61,10 +61,8 @@ class CvImageTools():
         images = self.__cv_client.api.get_images()['data']
         MODULE_LOGGER.debug(images)
         if len(images) > 0:
-            self._images.clear()
-            self._images.extend(images)
-            return True
-        return False
+            return images
+        return None
 
 
     def __get_image_bundles(self):
@@ -73,19 +71,15 @@ class CvImageTools():
         imageBundles = self.__cv_client.api.get_image_bundles()['data']
         MODULE_LOGGER.debug(imageBundles)
         if len(imageBundles) > 0:
-            self._imageBundles = imageBundles
-            return True
-        return False
+            return imageBundles
+        return None
 
 
     def refresh_cvp_image_data(self):
-        self._images = self.__get_images()
-        self._imageBundles = self.__get_image_bundles()
-        MODULE_LOGGER.debug(' -> Current image set:')
-        MODULE_LOGGER.debug(self._images)
-        MODULE_LOGGER.debug(' -> Current image bundle set:')
-        MODULE_LOGGER.debug(self._imageBundles)
-        return None   
+        images = self.__get_images()
+        bundles = self.__get_image_bundles()
+
+        return images, bundles
 
 
     def is_image_present(self, image):
@@ -210,12 +204,18 @@ class CvImageTools():
         changed = False
         data = dict()
         warnings = list()
+        
+        
+        cvp_images = list()
+        cvp_image_bundles = list()
 
         
         
         if mode == "images":
             if action == "get":
-                self.refresh_cvp_image_data()
+                cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
+                
+                
                 return changed, {'images':self._images,'image_bundle': self._imageBundles } , warnings
 
             
@@ -225,7 +225,7 @@ class CvImageTools():
                         MODULE_LOGGER.debug("Image not present. Trying to add.")
                         try:
                             data = self.__cv_client.api.add_image(image)
-                            self.refresh_cvp_image_data()
+                            cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
                             MODULE_LOGGER.debug(data)
                             changed = True
                         except Exception as e:
@@ -256,7 +256,7 @@ class CvImageTools():
                             response = self.__cv_client.api.update_image_bundle( key, bundle_name, images )
                             changed = True
                             data = response['data']
-                            self.refresh_cvp_image_data()
+                            cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
                         except Exception as e:
                             self.__ansible.module.fail_json( msg="%s" % str(e) )
                     
@@ -273,7 +273,7 @@ class CvImageTools():
                             response = self.__cv_client.api.save_image_bundle( bundle_name, images )
                             changed = True
                             data = response['data']
-                            self.refresh_cvp_image_data()
+                            cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
                         except Exception as e:
                             self.__ansible.module.fail_json( msg="%s" % str(e) )
 
@@ -290,7 +290,7 @@ class CvImageTools():
                         response = self.__cv_client.client.api.delete_image_bundle(key,bundle_name )
                         changed = True
                         data = response['data']
-                        self.refresh_cvp_image_data()
+                        cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
                     except Exception as e:
                             self.__ansible.module.fail_json( msg="%s" % str(e) )
                 else:
