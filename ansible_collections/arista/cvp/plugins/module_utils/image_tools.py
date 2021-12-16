@@ -82,12 +82,14 @@ class CvImageTools():
         return images, bundles
 
 
-    def is_image_present(self, image):
+    def is_image_present(self, image_list, image):
         """
         Checks if a named image is present.
     
         Parameters
         ----------
+        image_list: list
+           Internal list of dicts, of CVP images
         image: str
            The name of the software image
     
@@ -97,7 +99,7 @@ class CvImageTools():
             True if present, False if not
         """
     
-        for entry in self._images:
+        for entry in image_list:
             if entry["imageFileName"] == os.path.basename(image):
                 return True            
         return False
@@ -125,12 +127,14 @@ class CvImageTools():
         return False
 
 
-    def get_bundle_key(self, bundle):
+    def get_bundle_key(self, bundle_list, bundle):
         """
         Gets the key for a given bundle
 
         Parameters
         ----------
+        bundle_list: list
+            List of dict with CVP bundle data
         bundle : str
             Ansible module.
 
@@ -140,7 +144,7 @@ class CvImageTools():
             The string value equivelent to the bundle key,
             or None if not found
         """
-        for entry in self._imageBundles:
+        for entry in bundle_list:
             if entry["name"] == bundle:
                 return entry["key"]
         return None
@@ -213,19 +217,16 @@ class CvImageTools():
         cvp_images = list()
         cvp_image_bundles = list()
 
-        
+        cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()      
         
         if mode == "images":
             if action == "get":
-                cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
-                
-                
                 return changed, {'images':cvp_images } , warnings
 
             
             elif action == "add" and self.__check_mode == False:
                 if len(image) > 0 and os.path.exists(image):
-                    if self.is_image_present(image) is False:
+                    if self.is_image_present(cvp_images, image) is False:
                         MODULE_LOGGER.debug("Image not present. Trying to add.")
                         try:
                             data = self.__cv_client.api.add_image(image)
@@ -245,7 +246,7 @@ class CvImageTools():
         # So we are dealing with bundles rather than images
         else:
             if action == "get":
-                data = self.refresh_cvp_image_data()
+
                 return changed, {'bundles':cvp_image_bundles }, warnings
             
             elif action == "add" and self.__check_mode == False:
@@ -253,11 +254,11 @@ class CvImageTools():
                 # or changing an existing bundle (update)
                 if self.does_bundle_exist(cvp_image_bundles, bundle_name):
                     warnings.append('Note that when updating a bundle, all the images to be used in the bundle must be listed')
-                    key = self.get_bundle_key(bundle_name)
+                    cvp_key = self.get_bundle_key(cvp_image_bundles, bundle_name)
                     images = self.build_image_list( cvp_images, image_list )
                     if images is not None:
                         try:
-                            response = self.__cv_client.api.update_image_bundle( key, bundle_name, images )
+                            response = self.__cv_client.api.update_image_bundle( cvp_key, bundle_name, images )
                             changed = True
                             data = response['data']
                             cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
@@ -271,7 +272,7 @@ class CvImageTools():
                         
 
                 else:
-                    images = self.build_image_list(image_list)
+                    images = self.build_image_list(cvp_images, image_list)
                     if images is not None:
                         try:
                             response = self.__cv_client.api.save_image_bundle( bundle_name, images )
@@ -288,10 +289,10 @@ class CvImageTools():
                 
             elif action == "remove" and self.__check_mode == False:
                 warnings.append('Note that deleting the image bundle does not delete the images')
-                if self.does_bundle_exist(bundle_name):
-                    key = self.get_bundle_key(bundle_name)
+                if self.does_bundle_exist(cvp_image_bundles, bundle_name):
+                    cvp_key = self.get_bundle_key(cvp_image_bundles, bundle_name)
                     try:
-                        response = self.__cv_client.client.api.delete_image_bundle(key,bundle_name )
+                        response = self.__cv_client.client.api.delete_image_bundle(cvp_key,bundle_name )
                         changed = True
                         data = response['data']
                         cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
