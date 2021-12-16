@@ -56,7 +56,7 @@ class CvImageTools():
  
     def __get_images(self):
         images = []
-    
+        
         MODULE_LOGGER.debug('  -> Collecting images')
         images = self.__cv_client.api.get_images()['data']
         if len(images) > 0:
@@ -209,7 +209,7 @@ class CvImageTools():
         if mode == "images":
             if action == "get":
                 self.refresh_cvp_image_data()
-                return changed, self._images, warnings
+                return changed, {'image_data':self._images}, warnings
 
             
             elif action == "add" and self.__check_mode == False:

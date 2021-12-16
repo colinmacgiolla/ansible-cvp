@@ -97,7 +97,8 @@ def main():
         image_list=dict(type="list", elements='str'),
         bundle_name=dict(type='str'),
         mode=dict(default='images', type='str', choices=['images','bundles']),
-        action=dict(default='get', type='str', choices=['get','add','remove']) )
+        action=dict(default='get', type='str', choices=['get','add','remove']),
+        required_together=[('image_list','bundle_name')])
 
     ansible_module = AnsibleModule(argument_spec=argument_spec,
                            supports_check_mode=True)
