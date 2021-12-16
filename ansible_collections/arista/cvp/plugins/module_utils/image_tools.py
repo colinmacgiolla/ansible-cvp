@@ -225,12 +225,14 @@ class CvImageTools():
 
             
             elif action == "add" and self.__check_mode == False:
+                MODULE_LOGGER.debug("   -> trying to add an image")
                 if len(image) > 0 and os.path.exists(image):
                     if self.is_image_present(cvp_images, image) is False:
                         MODULE_LOGGER.debug("Image not present. Trying to add.")
                         try:
                             data = self.__cv_client.api.add_image(image)
                             cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
+                            MODULE_LOGGER.debug("   -> Returned data follows")
                             MODULE_LOGGER.debug(data)
                             changed = True
                         except Exception as e:
@@ -253,6 +255,7 @@ class CvImageTools():
                 # There are basically 2 actions - either we are adding a new bundle (save)
                 # or changing an existing bundle (update)
                 if self.does_bundle_exist(cvp_image_bundles, bundle_name):
+                    MODULE_LOGGER.debug("   -> Updating existing bundle")
                     warnings.append('Note that when updating a bundle, all the images to be used in the bundle must be listed')
                     cvp_key = self.get_bundle_key(cvp_image_bundles, bundle_name)
                     images = self.build_image_list( cvp_images, image_list )
@@ -273,6 +276,7 @@ class CvImageTools():
 
                 else:
                     images = self.build_image_list(cvp_images, image_list)
+                    MODULE_LOGGER.debug("   -> creating a new bundle")
                     if images is not None:
                         try:
                             MODULE_LOGGER.debug("Bundle name: %s\nImage list: \n%s" %(bundle_name, images) )
@@ -290,11 +294,12 @@ class CvImageTools():
                     return changed, data, warnings
                 
             elif action == "remove" and self.__check_mode == False:
+                MODULE_LOGGER.debug("   -> trying to delete a bundle")
                 warnings.append('Note that deleting the image bundle does not delete the images')
                 if self.does_bundle_exist(cvp_image_bundles, bundle_name):
                     cvp_key = self.get_bundle_key(cvp_image_bundles, bundle_name)
                     try:
-                        response = self.__cv_client.client.api.delete_image_bundle(cvp_key,bundle_name )
+                        response = self.__cv_client.api.delete_image_bundle(cvp_key,bundle_name )
                         changed = True
                         data = response['data']
                         cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
