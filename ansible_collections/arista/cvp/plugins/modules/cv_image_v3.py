@@ -105,8 +105,8 @@ def main():
     
     # Instantiate ansible results
     result = dict(changed=False, data={}, failed=False)
-    result['data']['taskIds'] = list()
-    result['data']['tasks'] = list()
+    warnings = list()
+
 
     MODULE_LOGGER.info('starting module cv_image_v3')
     if ansible_module.check_mode:
