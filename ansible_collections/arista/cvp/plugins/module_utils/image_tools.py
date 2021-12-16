@@ -275,13 +275,14 @@ class CvImageTools():
                     images = self.build_image_list(cvp_images, image_list)
                     if images is not None:
                         try:
+                            MODULE_LOGGER.debug("Bundle name: %s\nImage list: \n%s" %(bundle_name, images) )
                             response = self.__cv_client.api.save_image_bundle( bundle_name, images )
                             MODULE_LOGGER.debug(response)
                             changed = True
                             data = response['data']
                             cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()
                         except Exception as e:
-                            self.__ansible.module.fail_json( msg="%s" % str(e) )
+                            self.__ansible.fail_json( msg="%s" % str(e) )
 
                     else:
                         self.__ansible.module.fail_json(msg="Unable to create bundle - images not present on server")
