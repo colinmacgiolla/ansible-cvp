@@ -212,7 +212,7 @@ class CvImageTools():
                 return changed, self._images, warnings
 
             
-            elif action == "add":
+            elif action == "add" and self.__check_mode == False:
                 if len(image) > 0 and os.path.exists(image):
                     if self.is_image_present(image) is False:
                         MODULE_LOGGER.debug("Image not present. Trying to add.")
@@ -237,7 +237,7 @@ class CvImageTools():
                 data = self.refresh_cvp_image_data()
                 return changed, self._imageBundles, warnings
             
-            elif action == "add":
+            elif action == "add" and self.__check_mode == False:
                 # There are basically 2 actions - either we are adding a new bundle (save)
                 # or changing an existing bundle (update)
                 if self.does_bundle_exist(bundle_name):
@@ -275,7 +275,7 @@ class CvImageTools():
                     
                     return changed, data, warnings
                 
-            else:
+            elif action == "remove" and self.__check_mode == False:
                 warnings.append('Note that deleting the image bundle does not delete the images')
                 if self.does_bundle_exist(bundle_name):
                     key = self.get_bundle_key(bundle_name)
@@ -288,5 +288,9 @@ class CvImageTools():
                             self.__ansible.module.fail_json( msg="%s" % str(e) )
                 else:
                     self.__ansible.module.fail_json(msg="Unable to delete bundle - not found")
+                    
+            else:
+                # You have reached a logically impossible state
+                pass
                 
         return changed, data, warnings
