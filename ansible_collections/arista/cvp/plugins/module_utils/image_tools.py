@@ -59,6 +59,7 @@ class CvImageTools():
         
         MODULE_LOGGER.debug('  -> Collecting images')
         images = self.__cv_client.api.get_images()['data']
+        MODULE_LOGGER.debug('images')
         if len(images) > 0:
             self._images.clear()
             self._images.extend(images)
@@ -70,6 +71,7 @@ class CvImageTools():
         imageBundles = []
         MODULE_LOGGER.debug('  -> Collecting image bundles')
         imageBundles = self.__cv_client.api.get_image_bundles()['data']
+        MODULE_LOGGER.debug('imageBundles')
         if len(imageBundles) > 0:
             self._imageBundles = imageBundles
             return True
@@ -79,6 +81,10 @@ class CvImageTools():
     def refresh_cvp_image_data(self):
         self._images = self.__get_images()
         self._imageBundles = self.__get_image_bundles()
+        MODULE_LOGGER.debug(' -> Current image set:')
+        MODULE_LOGGER.debug(self._images)
+        MODULE_LOGGER.debug(' -> Current image bundle set:')
+        MODULE_LOGGER.debug(self._imageBundles)
         return None   
 
 
