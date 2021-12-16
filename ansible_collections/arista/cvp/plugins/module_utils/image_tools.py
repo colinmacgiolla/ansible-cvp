@@ -60,7 +60,8 @@ class CvImageTools():
         MODULE_LOGGER.debug('  -> Collecting images')
         images = self.__cv_client.api.get_images()['data']
         if len(images) > 0:
-            self._images = images
+            self._images.clear()
+            self._images.extend(images)
             return True
         return False
 
@@ -209,7 +210,7 @@ class CvImageTools():
         if mode == "images":
             if action == "get":
                 self.refresh_cvp_image_data()
-                return changed, {'image_data':self._images}, warnings
+                return changed, {'images':self._images,'image_bundle': self._imageBundles } , warnings
 
             
             elif action == "add" and self.__check_mode == False:
