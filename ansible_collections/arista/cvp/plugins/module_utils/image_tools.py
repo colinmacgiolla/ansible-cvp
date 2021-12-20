@@ -219,7 +219,7 @@ class CvImageTools():
 
         cvp_images, cvp_image_bundles = self.refresh_cvp_image_data()      
         
-        if mode == "images":
+        if mode == "image":
             if action == "get":
                 return changed, {'images':cvp_images } , warnings
 
@@ -238,7 +238,7 @@ class CvImageTools():
                         except Exception as e:
                             self.__ansible.fail_json( msg="%s" % str(e))
                     else:
-                        self.__ansible.fail_json(msg="Same image name already exists on the system")
+                        warnings.append("Unable to add image {}. Image already present on server".format(image))
                 else:
                     self.__ansible.fail_json(msg="Specified file ({}) does not exist".format(image) )
             else:
