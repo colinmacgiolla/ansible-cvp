@@ -61,7 +61,7 @@ def main():
         name=dict(type='str'),
         tasks=dict(type="list", elements='str'),
         mode=dict(type='str', choices=['parallel','serial']),
-        thing=dict(default='image', type='str', choices=['change', 'stage', 'task']),
+        type=dict(default='image', type='str', choices=['change', 'stage', 'task']),
         action=dict(default='get', type='str', choices=['get', 'add', 'remove']),
     )
 
@@ -90,13 +90,13 @@ def main():
     result = dict(changed=False)
 
     # Instantiate the image class
-    cv_images = CvChangeControlTools(
+    cv_cc = CvChangeControlTools(
         cv_connection=cv_client,
         ansible_module=ansible_module,
         check_mode=ansible_module.check_mode
     )
 
-    result['changed'], result['data'], warnings = cv_images.module_action(**ansible_module.params)
+    result['changed'], result['data'], warnings = cv_cc.module_action(**ansible_module.params)
     MODULE_LOGGER.warning(warnings)
 
     ansible_module.exit_json(**result)
