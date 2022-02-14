@@ -74,10 +74,12 @@ class CvChangeControlTools():
     def get_available_tasks(self, dev_filter=None, task_type='image'):
         '''
         self.__cv_client.api.change_control_available_tasks returns a list of
-        tasks, which aren't assigned to any CCs already (no idea the logic behind that).
-        Currently the task can have a VIEW of either IMAGE or CONFIG (afaik)
+        tasks, which aren't assigned to any CCs already (broken, see https://github.com/aristanetworks/cvprac/issues/186).
         
-        The 'workOrderId' is usually referred to as the 'taskId' on most external contexts
+        Currently the task can have a VIEW of either IMAGE or CONFIG (afaik)
+        Need to add more logic to avoid #186 for now - don't want to assign the same task to multiple CCs
+        
+        Note: The 'workOrderId' is usually referred to as the 'taskId' on most external contexts
         '''
         MODULE_LOGGER.debug('Getting available tasks')
         tasks = self.__cv_client.api.change_control_available_tasks()
@@ -86,7 +88,7 @@ class CvChangeControlTools():
             for entry in tasks:
                 if entry['data']['VIEW'] == task_type.upper():
                     if dev_filter is not None:
-                        if dev_filter in entry['data']['workOrderDetail']['netElementHostName']:
+                        if dev_filter in entry['workOrderDetails']['netElementHostName']:
                             filtered_tasks.append(entry)
                     else:
                         filtered_tasks.append(entry)
