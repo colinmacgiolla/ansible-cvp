@@ -51,12 +51,15 @@ class CvChangeControlTools():
         self.__ansible = ansible_module
         self.__check_mode = check_mode
         self.__cc_index = []
+        self.cvp_version = self.__cv_client.api.get_cvp_info()['version']
+        self.apiversion = self.__cv_client.apiversion
         
     def __index_cc__(self):
         MODULE_LOGGER.debug('Indexing Change Controls')
         for entry in self.change_controls['data']:
             self.__cc_index.append( (entry['result']['value']['change']['name'],entry['result']['value']['key']['id']) )
 
+        
             
     def find_id_by_name(self, name):
         cc_id = []
@@ -69,28 +72,33 @@ class CvChangeControlTools():
         legacy = True
         MODULE_LOGGER.debug('Collecting Change controls')
         
-        MODULE_LOGGER.debug('Trying legacy API call')
-        cc_list = self.__cv_client.api.get_change_controls()
-        cc_detailed_list = []
+        if self.apiversion < 3.0:
+            MODULE_LOGGER.debug('Trying legacy API call')
+            cc_list = self.__cv_client.api.get_change_controls()
         
-        if cc_list is None:
-            legacy = False
+        else:
             MODULE_LOGGER.debug('Using resource API call')
             cc_list = self.__cv_client.get('/api/resources/changecontrol/v1/ChangeControl/all')
-            
-            
+
         if len(cc_list) > 0:
             self.change_controls = cc_list
             self.__index_cc__()
             return True
-        return False
+
+        return None
+
     
     def get_change_control(self, cc_id):
-        change = self.__cv_client.get_change_control_info(cc_id)
-        if change is None:
+        
+        MODULE_LOGGER.debug('Collecting change control: %s' % cc_id)
+        if self.apiversion < 3.0:
+            MODULE_LOGGER.debug('Using legacy API call')
+            change = self.__cv_client.api.get_change_control_info(cc_id)
+        else:
             params = 'key.id={}'.format(cc_id)
             cc_url = '/api/resources/changecontrol/v1/ChangeControl?' + params
             change = self.__cv_client.get(cc_url)
+            
         return change
     
         
