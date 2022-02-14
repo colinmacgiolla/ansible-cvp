@@ -55,8 +55,10 @@ class CvChangeControlTools():
         cc_list = []
         MODULE_LOGGER.debug('Collecting Change controls')
         try:
+            MODULE_LOGGER.debug('Trying legacy API call')
             cc_list = self.__cv_client.api.get_change_controls()
         except:
+            MODULE_LOGGER.debug('Using resource API call')
             cc_list = self.__cv_client.get('/api/resources/changecontrol/v1/ApproveConfig/all')
         if len(cc_list) > 0:
             self.change_controls = cc_list
