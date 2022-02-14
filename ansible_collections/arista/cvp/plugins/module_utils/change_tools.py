@@ -70,7 +70,7 @@ class CvChangeControlTools():
         MODULE_LOGGER.debug('Collecting Change controls')
         
         MODULE_LOGGER.debug('Trying legacy API call')
-        cc_list = self.__cv_client.api.get_all_change_controls()
+        cc_list = self.__cv_client.api.get_change_controls()
         cc_detailed_list = []
         
         if cc_list is None:
