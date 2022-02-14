@@ -19,6 +19,7 @@
 #
 
 from __future__ import (absolute_import, division, print_function)
+import string
 __metaclass__ = type
 
 import traceback
@@ -49,15 +50,27 @@ class CvChangeControlTools():
         self.__cv_client = cv_connection
         self.__ansible = ansible_module
         self.__check_mode = check_mode
+        self.__cc_index = []
         
+    def __index_cc__(self):
+        MODULE_LOGGER.debug('Indexing Change Controls')
+        for entry in self.change_controls['data']:
+            self.__cc_index.append( (entry['result']['value']['change']['name'],entry['result']['value']['key']['id']) )
+
+            
+    def find_id_by_name(self, name):
+        cc_id = []
+        cc_id = list(filter(lambda x:name in x, self.__cc_index))
+        return cc_id
+            
         
-    def get_change_controls(self):
+    def get_all_change_controls(self):
         cc_list = []
         legacy = True
         MODULE_LOGGER.debug('Collecting Change controls')
         
         MODULE_LOGGER.debug('Trying legacy API call')
-        cc_list = self.__cv_client.api.get_change_controls()
+        cc_list = self.__cv_client.api.get_all_change_controls()
         cc_detailed_list = []
         
         if cc_list is None:
@@ -65,32 +78,42 @@ class CvChangeControlTools():
             MODULE_LOGGER.debug('Using resource API call')
             cc_list = self.__cv_client.get('/api/resources/changecontrol/v1/ChangeControl/all')
             
-#        if legacy == False:
-#            for entry in cc_list['data']:
-#                cc_id = entry['result']['value']['key']['id']
-#                params = 'key.id={}'.format(cc_id)
-#                cc_detailed_list.append(self.__cv_client.get('/api/resources/changecontrol/v1/ApproveConfig/all'))
-            
             
         if len(cc_list) > 0:
             self.change_controls = cc_list
+            self.__index_cc__()
             return True
         return False
     
+    def get_change_control(self, cc_id):
+        change = self.__cv_client.get_change_control_info(cc_id)
+        if change is None:
+            params = 'key.id={}'.format(cc_id)
+            cc_url = '/api/resources/changecontrol/v1/ChangeControl?' + params
+            change = self.__cv_client.get(cc_url)
+        return change
     
         
     
     
-    def module_action(self, name:str, tasks:List[str], thing:dict, mode:str = "series", action:str = "get" ):
+    def module_action(self, tasks:List[str], thing:dict, name:str = None, mode:str = "series", action:str = "get" ):
         
         changed = False
         data = dict()
         warnings = list()
         
-        self.get_change_controls()
+        self.get_all_change_controls()
         
         if action == "get":
-            return changed, {'change_controls': self.change_controls}, warnings
+            if name is None:
+                return changed, {'change_controls': self.change_controls}, warnings
+            else:
+                cc_list = []
+                cc_id_list = self.find_id_by_name(name)
+                for change in cc_id_list:
+                    cc_list.append(self.get_change_control(change) )
+                    
+                return changed, {'change_controls:': cc_list  }, warnings
         
         
         
