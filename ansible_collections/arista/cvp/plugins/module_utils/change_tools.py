@@ -133,6 +133,8 @@ class CvChangeControlTools():
         if state == "remove":
             MODULE_LOGGER.debug("Deleting change control")
             if change_id is not None:
+                if name is not None:
+                    warnings.append("Deleting CC IDs takes precedence over deleting named CCs. Only the provided CCids will be deleted")
                 try:
                     changes = self.__cv_client.api.delete_change_controls(change_id)
                     MODULE_LOGGER.debug("Response to delete request was: %s" % changes)
