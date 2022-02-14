@@ -67,7 +67,7 @@ class CvChangeControlTools():
         
     
     
-    def module_action(self, name:str, tasks:List[str], mode:str = "series", thing:dict, action:str = "get"):
+    def module_action(self, name:str, tasks:List[str], thing:dict, mode:str = "series", action:str = "get" ):
         
         changed = False
         data = dict()
