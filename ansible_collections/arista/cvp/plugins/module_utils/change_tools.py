@@ -71,9 +71,29 @@ class CvChangeControlTools():
         return cc_id
     
     # This could be moved into cvp_facts_v3
-    def get_available_tasks(self, filter=''):
+    def get_available_tasks(self, dev_filter=None, task_type='image'):
+        '''
+        self.__cv_client.api.change_control_available_tasks returns a list of
+        tasks, which aren't assigned to any CCs already (no idea the logic behind that).
+        Currently the task can have a VIEW of either IMAGE or CONFIG (afaik)
+        
+        The 'workOrderId' is usually referred to as the 'taskId' on most external contexts
+        '''
         MODULE_LOGGER.debug('Getting available tasks')
-        return self.__cv_client.api.change_control_available_tasks(query=filter)
+        tasks = self.__cv_client.api.change_control_available_tasks()
+        if len(tasks) > 0:
+            filtered_tasks = []
+            for entry in tasks:
+                if entry['data']['VIEW'] == task_type.upper():
+                    if dev_filter is not None:
+                        if dev_filter in entry['data']['workOrderDetail']['netElementHostName']:
+                            filtered_tasks.append(entry)
+                    else:
+                        filtered_tasks.append(entry)
+            return filtered_tasks
+                
+        else:
+            return None
         
             
         
