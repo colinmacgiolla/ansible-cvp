@@ -37,26 +37,46 @@ except ImportError:
     CVPRAC_IMP_ERR = traceback.format_exc()
 
 
-MODULE_LOGGER = logging.getLogger('arista.cvp.image_tools')
-MODULE_LOGGER.info('Start image_tools module execution')
+MODULE_LOGGER = logging.getLogger('arista.cvp.change_tools')
+MODULE_LOGGER.info('Start change_tools module execution')
 
 
 class CvChangeControlTools():
     """
-    CvImageTools Class to manage Cloudvision software images and byndles
+    CvImageTools Class to manage Cloudvision Change Controls
     """
     def __init__(self, cv_connection, ansible_module: AnsibleModule = None, check_mode: bool = False):
         self.__cv_client = cv_connection
         self.__ansible = ansible_module
         self.__check_mode = check_mode
         
+        
+    def get_change_controls(self):
+        cc_list = []
+        MODULE_LOGGER.debug('Collecting Change controls')
+        try:
+            cc_list = self.__cv_client.api.get_change_controls()
+        except:
+            cc_list = self.__cv_client.get('/api/resources/changecontrol/v1/ApproveConfig/all')
+        if len(cc_list) > 0:
+            self.change_controls = cc_list
+            return True
+        return False
     
     
-    def module_action(self):
+        
+    
+    
+    def module_action(self, name:str, tasks:List[str], mode:str = "series", thing:dict, action:str = "get"):
         
         changed = False
         data = dict()
         warnings = list()
+        
+        self.get_change_controls()
+        
+        if action == "get":
+            return changed, {'change_controls': self.change_controls}, warnings
         
         
         
