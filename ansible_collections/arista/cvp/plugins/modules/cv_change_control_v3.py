@@ -60,8 +60,7 @@ def main():
     argument_spec = dict(
         name=dict(type='str'),
         tasks=dict(type="list", elements='str'),
-        mode=dict(type='str', choices=['parallel','series']),
-        thing=dict(default='change', type='str', choices=['change', 'stage', 'task', 'action']),
+        mode=dict(type='str', choices=['change','task']),
         state=dict(default='get', type='str', choices=['get', 'set', 'remove']),
     )
 
