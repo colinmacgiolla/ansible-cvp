@@ -50,6 +50,7 @@ class CvChangeControlTools():
         self.__cv_client = cv_connection
         self.__ansible = ansible_module
         self.__check_mode = check_mode
+        # A list of tuples ("Change Control Name", "Change control ID")
         self.__cc_index = []
         self.cvp_version = self.__cv_client.api.get_cvp_info()['version']
         self.apiversion = self.__cv_client.apiversion
@@ -68,6 +69,12 @@ class CvChangeControlTools():
         cc_id = list( filter(lambda x:name in x, self.__cc_index) )
         MODULE_LOGGER.debug('%d changes found' % len(cc_id))
         return cc_id
+    
+    # This could be moved into cvp_facts_v3
+    def get_available_tasks(self, filter=''):
+        MODULE_LOGGER.debug('Getting available tasks')
+        return self.__cv_client.api.change_control_available_tasks(query=filter)
+        
             
         
     def get_all_change_controls(self):
@@ -109,7 +116,7 @@ class CvChangeControlTools():
         
     
     
-    def module_action(self, tasks:List[str], thing:dict, name:str = None, mode:str = "series", state:str = "get", change_id:List[str] = None ):
+    def module_action(self, tasks:List[str], name:str = None, mode:str = "change", state:str = "get", change_id:List[str] = None ):
         
         changed = False
         data = dict()
@@ -118,19 +125,23 @@ class CvChangeControlTools():
         self.get_all_change_controls()
         
         if state == "get":
-            if name is None:
-                return changed, {'change_controls': self.change_controls}, warnings
-            else:
-                cc_list = []
-                cc_id_list = self._find_id_by_name(name)
-                for change in cc_id_list:
-                    MODULE_LOGGER.debug('Looking up change: %s with ID: %s' % (change[0],change[1]) )
-                    cc_list.append(self.get_change_control(change[1]) )
+            if mode == "change":
+                if name is None:
+                    return changed, {'change_controls': self.change_controls}, warnings
+                else:
+                    cc_list = []
+                    cc_id_list = self._find_id_by_name(name)
+                    for change in cc_id_list:
+                        MODULE_LOGGER.debug('Looking up change: %s with ID: %s' % (change[0],change[1]) )
+                        cc_list.append(self.get_change_control(change[1]) )
 
-                return changed, {'change_controls:': cc_list  }, warnings
+                    return changed, {'change_controls:': cc_list  }, warnings
+            else:
+                tasks = self.get_available_tasks(name)
+                return changed, {'Pending Tasks': tasks}, warnings
             
             
-        if state == "remove":
+        elif state == "remove":
             MODULE_LOGGER.debug("Deleting change control")
             if change_id is not None:
                 if name is not None:
@@ -154,6 +165,7 @@ class CvChangeControlTools():
                     return changed, {'search': name}, warnings
                 elif len(cc_list) > 1:
                     warnings.append("Multiple changes (%d) found matching name: %s" % (len(cc_list),name ) )
+                    # Should we hard fail here?
                     e = "Deleting multiple CCs by name is not supported at this time"
                     self.__ansible.fail_json(msg="{0}".format(e))
                     return changed, {'matches': cc_list}, warnings
@@ -170,7 +182,7 @@ class CvChangeControlTools():
                 e = "Unable to delete change control. Change name or change_id(s) must be specified"
                 self.__ansible.fail_json(msg="{0}".format(e))
                     
-        else:
+        elif state == "set":
             pass
                 
             
