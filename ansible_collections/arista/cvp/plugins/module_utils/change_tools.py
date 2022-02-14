@@ -157,7 +157,7 @@ class CvChangeControlTools():
 
                     return changed, {'change_controls:': cc_list  }, warnings
             else:
-                tasks = self.get_available_tasks(name)
+                tasks = self.get_available_tasks(dev_filter=name)
                 return changed, {'Pending Tasks': tasks}, warnings
             
             
