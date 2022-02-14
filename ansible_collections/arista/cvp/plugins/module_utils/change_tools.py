@@ -53,14 +53,23 @@ class CvChangeControlTools():
         
     def get_change_controls(self):
         cc_list = []
+        legacy = True
         MODULE_LOGGER.debug('Collecting Change controls')
         
         MODULE_LOGGER.debug('Trying legacy API call')
         cc_list = self.__cv_client.api.get_change_controls()
+        cc_detailed_list = []
         
-        if cc_list is None:    
+        if cc_list is None:
+            legacy = False
             MODULE_LOGGER.debug('Using resource API call')
-            cc_list = self.__cv_client.get('/api/resources/changecontrol/v1/ApproveConfig/all')
+            cc_list = self.__cv_client.get('/api/resources/changecontrol/v1/ChangeControl/all')
+            
+#        if legacy == False:
+#            for entry in cc_list['data']:
+#                cc_id = entry['result']['value']['key']['id']
+#                params = 'key.id={}'.format(cc_id)
+#                cc_detailed_list.append(self.__cv_client.get('/api/resources/changecontrol/v1/ApproveConfig/all'))
             
             
         if len(cc_list) > 0:
