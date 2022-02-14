@@ -152,6 +152,8 @@ class CvChangeControlTools():
                     return changed, {'search': name}, warnings
                 elif len(cc_list) > 1:
                     warnings.append("Multiple changes (%d) found matching name: %s" % (len(cc_list),name ) )
+                    e = "Deleting multiple CCs by name is not supported at this time"
+                    self.__ansible.fail_json(msg="{0}".format(e))
                     return changed, {'matches': cc_list}, warnings
                 else:
                     try:
