@@ -63,7 +63,7 @@ class CvChangeControlTools():
             
     def find_id_by_name(self, name):
         cc_id = []
-        cc_id = list(filter(lambda x:name in x, self.__cc_index))
+        cc_id = list( filter(lambda x:name in x, self.__cc_index) )
         MODULE_LOGGER.debug('%d changes found' % len(cc_id))
         return cc_id
             
@@ -120,7 +120,8 @@ class CvChangeControlTools():
                 cc_list = []
                 cc_id_list = self.find_id_by_name(name)
                 for change in cc_id_list:
-                    cc_list.append(self.get_change_control(change) )
+                    MODULE_LOGGER.debug('Looking up change: %s with ID: %s' % (change[0],change[1]) )
+                    cc_list.append(self.get_change_control(change[1]) )
                     
                 return changed, {'change_controls:': cc_list  }, warnings
         
