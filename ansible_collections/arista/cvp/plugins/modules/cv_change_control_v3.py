@@ -62,7 +62,7 @@ def main():
         tasks=dict(type="list", elements='str'),
         mode=dict(type='str', choices=['parallel','series']),
         thing=dict(default='change', type='str', choices=['change', 'stage', 'task', 'action']),
-        action=dict(default='get', type='str', choices=['get', 'add', 'remove']),
+        state=dict(default='get', type='str', choices=['get', 'set', 'remove']),
     )
 
     ansible_module = AnsibleModule(
