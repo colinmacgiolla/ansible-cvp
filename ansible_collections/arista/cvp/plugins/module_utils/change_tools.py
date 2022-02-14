@@ -64,6 +64,7 @@ class CvChangeControlTools():
     def find_id_by_name(self, name):
         cc_id = []
         cc_id = list(filter(lambda x:name in x, self.__cc_index))
+        MODULE_LOGGER.debug('%d changes found' % len(cc_id))
         return cc_id
             
         
