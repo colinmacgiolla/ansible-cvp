@@ -24,7 +24,8 @@ __metaclass__ = type
 
 import traceback
 import logging
-import os
+import random
+import string
 from typing import List
 from ansible.module_utils.basic import AnsibleModule
 import ansible_collections.arista.cvp.plugins.module_utils.logger   # noqa # pylint: disable=unused-import
@@ -40,6 +41,374 @@ except ImportError:
 
 MODULE_LOGGER = logging.getLogger('arista.cvp.change_tools')
 MODULE_LOGGER.info('Start change_tools module execution')
+
+
+
+class CvpChangeControlBuilder:
+    """
+    CvpChangeControlBuilder Class to the generation of a CVP Change control.
+    
+    Methods
+    -------
+    build_cc(data)
+        Returns the Change Control datastructure.
+    add_known_uuid(list(str))
+        Provide a list of UUIDs already in use to the class, to prevent collisions.
+    """
+    def __init__( self ):
+        # Guarantee that the generated IDs are unique, for this session
+        self.__keySize = 12
+        self.__keyStore = []
+        # Track if a stage is meant to be series or parallel
+        self.__stageMode = {}
+        # Map the stage name to the generated IDs
+        self.__stageMapping = {}
+        # The final change control
+        self.ChangeControl = {}
+        
+
+        
+    def build_cc(self, data):
+        """
+        Build the change control data structure
+
+        Parameters
+        ----------
+        data: dict
+            The dict consists of the following keys and data types;
+            name: str
+               The name of the change control
+            activities: list
+               A list of tasks or actions to be executed. Each entry is a dict consisting of;
+                    action (if performing a Change Control action): str
+                        The name of the Change Control Action e.g. what you select from the drop down menu in the GUI
+                    task_id: int
+                        The Task / Work Order Id for the task to be executed
+                    timeout: int
+                        The timeout value to be used for task completion 
+                    name: str
+                        A name for the card/action - not required or used outside of datastructures
+                    device: str
+                        Name of the device that this action is to be performed on
+                    stage: str
+                        The name of the stage to assign the action to 
+            stages: list
+               A list of stages, with their name, mode and parent stage defined;
+                    name: str
+                        The name of the stage
+                    mode: str (series | parallel)
+                        Defines if tasks/actions within that stage should be performed in series or parallel.
+                        Series is the default
+                    parent: str
+                        The name of the parent stage to assign this stage to
+                        
+        Example data
+        ------------
+        Sample data passed to method::
+          - name: TestCC123
+            notes: Test change 
+            activities:
+              - task_id: 1234
+                name: "task"
+                timeout: 12000
+                stage: Stage2
+              - action: "Switch Healthcheck"
+                name: "Switch1_health"
+                device: DC1-Leaf1a
+                stage: Stage0
+    
+              - action: "Switch Healthcheck"
+                name: "Switch1_health"
+                device: switch1
+                stage: Stage1b
+    
+              - action: "Switch Healthcheck"
+                name: "Spine 1 Health Check"
+                device: DC1-SPINE1
+                stage: Stage1b
+            stages:
+              - name: Stage0
+                mode: parallel
+    
+              - name: Stage1
+                mode: parallel
+    
+              - name: Stage1b
+                mode: parallel
+                parent: Stage1
+    
+              - name: Stage2
+                mode: series  
+        
+
+        Returns
+        -------
+        Str:
+            A random string, of length __keySize, guaranteed to be unique within the class instance.
+        """        
+        
+        self._create_cc_struct( data['name'], notes=data['notes'] )
+        
+        for stage in data['stages']:
+            if 'parent' in stage.keys():
+                self._create_stage(stage['name'],mode=stage['mode'],parent=stage['parent'])
+            else:
+                self._create_stage(stage['name'],mode=stage['mode'])
+
+
+        for action in data['activities']:
+            if 'task_id' in action:
+                self._create_task(action['name'], action['task_id'], action['stage'])
+            else:
+                self._create_action(action['name'], action['action'], action['stage'], action['device'])
+
+        return self.ChangeControl
+
+
+
+    def add_known_uuid(self, existing_id):
+        """
+        Update our list of UUIDs with other known ones, to prevent ID collussions
+
+        Parameters
+        ----------
+        existing_id: list (str)
+            List of strings, representing UUIDs already in use
+
+        Returns
+        -------
+        None
+        """
+        for entry in existing_id:
+            if entry not in self.__keyStore:
+                self.__keyStore.append(entry)
+
+        return None
+            
+        
+    def __genID__( self ):
+        """
+        Generates a UUID to identify each task/action and stage, and the assignment of the 
+        former to the latter. The UUID should be unique within the Change control.
+
+        Parameters
+        ----------
+        __keySize: int
+            The number of ascii_letters to include in the ID.
+
+        Returns
+        -------
+        Str:
+            A random string, of length __keySize, guaranteed to be unique within the class instance.
+        """
+        while True:
+            id = ''.join( random.choices( string.ascii_letters, k=self.__keySize ) )
+            if id not in self.__keyStore:
+                self.__keyStore.append(id)
+                return(id)
+            else:
+                # Keep looping until we get a unique ID
+                pass
+            
+        
+    def __attachThing( self, ownId, parent=None ):
+        """
+        Assign a task/action to a stage within the Change Control
+
+        Parameters
+        ----------
+        oneId: Str
+            The UUID assigned to this task or action
+        parent: Str
+            The UUID of the stage the task/action is to be assigned to.
+            By default everything will be assigned to the root stage unless otherwise specified
+
+        Returns
+        -------
+        None:
+            The Class ChangeControl is updated to reflect the updated attachment.
+        """
+        # If we don't have a parent, we are attached to the Root Stage
+        if parent == None:
+            parentId = self.ChangeControl['change']['rootStageId']
+        else:
+            parentId = self.__stageMapping[parent]
+        
+        # Depending on if it's a series or parallel stage, we need to populate the structure differently e.g. list of dicts vs list of strings
+        if self.__stageMode[parentId] == 'parallel':
+            if len(self.ChangeControl['change']['stages']['values'][parentId]['rows']['values']) == 0:
+                self.ChangeControl['change']['stages']['values'][parentId]['rows']['values'].append( {'values': [ ownId ] } )
+            else:
+                self.ChangeControl['change']['stages']['values'][parentId]['rows']['values'][0]['values'].append(ownId)
+
+        else:
+            self.ChangeControl['change']['stages']['values'][parentId]['rows']['values'].append( {'values': [ ownId ] } )
+        
+        return None
+            
+
+
+    def _create_cc_struct(self, name, mode='series', notes=None):
+        """
+        Create the Change Control starting structure
+
+        Parameters
+        ----------
+        Name: Str
+            The name of the CC 
+        mode: Str: series/parallel
+            For now, the mode of the root stage is always series - the API does not let a CC to be created
+            with the root stage as parallel, even when it has multiple stages/tasks/actions assigned to it.
+            
+            The GUI allows the root stage to be changed to parallel, but only after it's created.
+            
+            Our workaround is to always have a "hidden" root stage, always series, and we assign the 
+            defined root/Stage 0 to that - the child stages can be series or parallel on creation.
+        notes: Str
+            Any notes to be added to the CC, default is "Created by Ansible-CVP".
+
+        Returns
+        -------
+        None:
+            The Class ChangeControl is updated to reflect the updated attachment
+        """
+        changeControl = {}
+        change = {}
+        change['name'] = name
+        if notes is not None:
+            change['notes'] = notes
+        else:
+            change['notes'] = "Created by Ansible-CVP"
+        change['stages'] = {}
+        change['stages']['values'] = {}
+        change['rootStageId'] = self.__genID__()
+        self.__stageMapping[name] = change['rootStageId']
+        
+        change['stages']['values'][ change['rootStageId'] ] = {}
+        change['stages']['values'][ change['rootStageId'] ]['name'] = " ".join([name, "root stage"])
+        change['stages']['values'][ change['rootStageId'] ]['rows'] = {}
+        change['stages']['values'][ change['rootStageId'] ]['rows']['values'] = []
+        
+        # We could in theory have a collision here, as the key is basically the Change Control ID
+        # and since we don't know all the CC IDs, there is a non-0 possibility of this occurring
+        changeControl['key'] = { 'id': str(self.__genID__()) }
+        changeControl['change'] = change
+        
+        self.__stageMode[ change['rootStageId'] ] = mode
+       
+        self.ChangeControl = changeControl
+        
+        return None
+
+
+    def _create_stage(self, name, mode='series', parent=None):
+        """
+        Create a stage within the Change Control
+
+        Parameters
+        ----------
+        name: Str
+            The name of the stage - this should be unique
+        mode: Str (series | parallel)
+            The mode defines if tasks/actions within the stage will be executed in series
+            or in parallel
+        parent: Str
+            The UUID of the parent stage that this stage is to be assigned to.
+            By default will be assigned to the root stage
+
+        Returns
+        -------
+        None:
+            The Class ChangeControl is updated to include the new stage
+        """
+        stageId = self.__genID__()
+        self.__stageMode[stageId] = mode
+        self.__stageMapping[name] = stageId
+        self.__attachThing(stageId,parent)
+        stage = {}
+        stage['name'] = name
+        stage['rows'] = {}
+        stage['rows']['values'] = []
+        
+        self.ChangeControl['change']['stages']['values'][stageId] = stage
+        
+        return None
+        
+ 
+        
+    def _create_task(self, name, taskID, stage=None, timeout=3000):
+        """
+        Create a task within the Change Control
+
+        Parameters
+        ----------
+        name: Str
+            The name of the task - by default this is "task"
+        taskID: Str 
+            The task/workorderID of the task to be executed
+        stage: Str
+            The name of the stage that this task is to be assigned to
+        timeout: Int
+            The timeout value for task completion in X units
+
+        Returns
+        -------
+        None:
+            The Class ChangeControl is updated to include the new task
+        """
+        task = {}
+        task['action'] = {}
+        task['action']['name'] = 'task'
+        task['action']['args'] = {}
+        task['action']['args']['values'] = {}
+        task['action']['args']['values']['TaskID'] = taskID
+        task['action']['timeout'] = timeout
+        task['name'] = name
+        
+        cardID = self.__genID__()
+        self.ChangeControl['change']['stages']['values'][cardID] = task
+        self.__attachThing(cardID, stage)
+        
+        return None
+        
+
+    def _create_action(self, name, action, stage, deviceID):
+        """
+        Create a task within the Change Control
+
+        Parameters
+        ----------
+        name: Str
+            The name of the action - by default this is "task"
+        taskID: Str 
+            The task/workorderID of the task to be executed
+        stage: Str
+            The name of the stage that this task is to be assigned to
+        timeout: Int
+            The timeout value for task completion in X units
+
+        Returns
+        -------
+        None:
+            The Class ChangeControl is updated to include the new task
+        """
+        
+        task = {}
+        task['action'] = {}
+        task['action']['name'] = action
+        task['action']['args'] = {}
+        task['action']['args']['values'] = {}
+        task['action']['args']['values']['DeviceID'] = deviceID
+        task['name'] = name
+        
+        cardID = self.__genID__()
+        self.ChangeControl['change']['stages']['values'][cardID] = task
+        self.__attachThing(cardID, stage)
+        
+        return None
+
+
+
 
 
 class CvChangeControlTools():
@@ -60,7 +429,7 @@ class CvChangeControlTools():
         self.__cc_index.clear()
         
         for entry in self.change_controls['data']:
-            self.__cc_index.append( (entry['result']['value']['change']['name'],entry['result']['value']['key']['id']) )
+            self.__cc_index.append( (entry['result']['value']['change']['name'], entry['result']['value']['key']['id']) )
 
         
             
@@ -72,7 +441,7 @@ class CvChangeControlTools():
     
     # This could be moved into cvp_facts_v3
     def get_available_tasks(self, dev_filter=None, task_type='image'):
-        '''
+        """
         self.__cv_client.api.change_control_available_tasks returns a list of
         tasks, which aren't assigned to any CCs already (broken, see https://github.com/aristanetworks/cvprac/issues/186).
         
@@ -80,7 +449,7 @@ class CvChangeControlTools():
         Need to add more logic to avoid #186 for now - don't want to assign the same task to multiple CCs
         
         Note: The 'workOrderId' is usually referred to as the 'taskId' on most external contexts
-        '''
+        """
         MODULE_LOGGER.debug('Getting available tasks')
         tasks = self.__cv_client.api.change_control_available_tasks()
         if len(tasks) > 0:
@@ -157,6 +526,7 @@ class CvChangeControlTools():
                         MODULE_LOGGER.debug('Looking up change: %s with ID: %s' % (change[0],change[1]) )
                         cc_list.append(self.get_change_control(change[1]) )
 
+                    # Revisit this - should be the full CC I guess
                     return changed, {'change_controls:': cc_list  }, warnings
             else:
                 tasks = self.get_available_tasks(dev_filter=name)
