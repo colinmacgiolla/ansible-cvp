@@ -509,7 +509,7 @@ class CvChangeControlTools():
         
     
     
-    def module_action(self, tasks:List[str], name:str = None, state:str = "get", change_id:List[str] = None ):
+    def module_action(self, change:dict, name:str = None, state:str = "get", change_id:List[str] = None ):
         
         changed = False
         data = dict()
@@ -575,10 +575,16 @@ class CvChangeControlTools():
                 self.__ansible.fail_json(msg="{0}".format(e))
                     
         elif state == "set":
-            pass
-                
+            changeControl = CvpChangeControlBuilder()
+            changeControl.add_known_uuid( [ v[1] for v in self.__cc_index ] )
+            cc_structure = changeControl.build_cc(change)
             
-        
-        
+            try:
+                data = self.__cv_client.post('/api/resources/changecontrol/v1/ChangeControlConfig',data=cc_structure )
+                changed = True
+                
+            except Exception as e:
+                self.__ansible.fail_json(msg="{0}".format(e))            
+            
         
         return changed, data, warnings
