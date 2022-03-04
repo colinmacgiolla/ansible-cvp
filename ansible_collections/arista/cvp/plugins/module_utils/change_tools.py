@@ -442,7 +442,7 @@ class CvChangeControlTools():
     # This could be moved into cvp_facts_v3
     def get_available_tasks(self, dev_filter=None, task_type='image'):
         """
-        self.__cv_client.api.change_control_available_tasks returns a list of
+        self.__cv_client.api.change_control_available_tasks should return a list of
         tasks, which aren't assigned to any CCs already (broken, see https://github.com/aristanetworks/cvprac/issues/186).
         
         Currently the task can have a VIEW of either IMAGE or CONFIG (afaik)
@@ -455,12 +455,14 @@ class CvChangeControlTools():
         if len(tasks) > 0:
             filtered_tasks = []
             for entry in tasks:
+                # this might be a bit biased towards my use case
                 if entry['data']['VIEW'] == task_type.upper():
                     if dev_filter is not None:
                         if dev_filter in entry['workOrderDetails']['netElementHostName']:
                             filtered_tasks.append(entry)
                     else:
                         filtered_tasks.append(entry)
+                        
             return filtered_tasks
                 
         else:
@@ -507,7 +509,7 @@ class CvChangeControlTools():
         
     
     
-    def module_action(self, tasks:List[str], name:str = None, mode:str = "change", state:str = "get", change_id:List[str] = None ):
+    def module_action(self, tasks:List[str], name:str = None, state:str = "get", change_id:List[str] = None ):
         
         changed = False
         data = dict()
@@ -516,21 +518,19 @@ class CvChangeControlTools():
         self.get_all_change_controls()
         
         if state == "get":
-            if mode == "change":
-                if name is None:
-                    return changed, {'change_controls': self.change_controls}, warnings
-                else:
-                    cc_list = []
-                    cc_id_list = self._find_id_by_name(name)
-                    for change in cc_id_list:
-                        MODULE_LOGGER.debug('Looking up change: %s with ID: %s' % (change[0],change[1]) )
-                        cc_list.append(self.get_change_control(change[1]) )
 
-                    # Revisit this - should be the full CC I guess
-                    return changed, {'change_controls:': cc_list  }, warnings
+            if name is None:
+                return changed, {'change_controls': self.change_controls}, warnings
             else:
-                tasks = self.get_available_tasks(dev_filter=name)
-                return changed, {'Pending Tasks': tasks}, warnings
+                cc_list = []
+                cc_id_list = self._find_id_by_name(name)
+                for change in cc_id_list:
+                    MODULE_LOGGER.debug('Looking up change: %s with ID: %s' % (change[0],change[1]) )
+                    cc_list.append(self.get_change_control(change[1]) )
+
+                # Revisit this - should be the full CC I guess
+                return changed, {'change_controls:': cc_list  }, warnings
+
             
             
         elif state == "remove":
