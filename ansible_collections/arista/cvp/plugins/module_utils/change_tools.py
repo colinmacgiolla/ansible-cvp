@@ -26,6 +26,7 @@ import traceback
 import logging
 import random
 import string
+from datetime import datetime
 from typing import List
 from ansible.module_utils.basic import AnsibleModule
 import ansible_collections.arista.cvp.plugins.module_utils.logger   # noqa # pylint: disable=unused-import
@@ -68,7 +69,7 @@ class CvpChangeControlBuilder:
         
 
         
-    def build_cc(self, data):
+    def build_cc(self, data, name = None):
         """
         Build the change control data structure
 
@@ -146,7 +147,7 @@ class CvpChangeControlBuilder:
         Str:
             A random string, of length __keySize, guaranteed to be unique within the class instance.
         """        
-        
+        data = self._validate_input(data, name)
         self._create_cc_struct( data['name'], notes=data['notes'] )
         
         for stage in data['stages']:
@@ -184,7 +185,58 @@ class CvpChangeControlBuilder:
                 self.__keyStore.append(entry)
 
         return None
+
+    def _validate_input( self, data, name = None ):
+        """
+        Sanitize the incoming data structure
+
+        Parameters
+        ----------
+        data: dict
+            Provided data structure defining the Change
+
+        Returns
+        -------
+        data: dict
+            Sanitized version of the input
+        """
+        defined_stages = []
+        
+        if 'name' not in data and name is None:
+            name = "Change "
+            timestamp = datetime.now()
+            name += timestamp.strftime("%Y%m%d_%H%M%S")
+            data['name'] = name
+        elif name is not None and len(name) > 0:
+            data['name'] = name
+        
+        
+        if 'notes' not in data:
+            data['notes'] = None
             
+        if 'stages' not in data:
+            data['stages'] = []
+        
+        if 'activities' not in data:
+            data['activities'] = []
+        
+        # Build a list of all the user defined stages
+        for stage in data['stages']:
+            if 'name' in stage:
+                defined_stages.append(stage['name'])
+
+        # if a task/action is assigned to a stage that isn't created
+        # assign it to the root stage
+        for task in data['activities']:
+            if 'stage' in task:
+                if task['stage'] not in defined_stages:
+                    task['stage'] = None
+
+        # if the key is provided, we are updating an existing CC
+        if 'key' in data:
+            self.__changeKey = data['key']
+        
+        return data            
         
     def __genID__( self ):
         """
@@ -577,7 +629,7 @@ class CvChangeControlTools():
         elif state == "set":
             changeControl = CvpChangeControlBuilder()
             changeControl.add_known_uuid( [ v[1] for v in self.__cc_index ] )
-            cc_structure = changeControl.build_cc(change)
+            cc_structure = changeControl.build_cc(change, name)
             
             try:
                 data = self.__cv_client.post('/api/resources/changecontrol/v1/ChangeControlConfig',data=cc_structure )
