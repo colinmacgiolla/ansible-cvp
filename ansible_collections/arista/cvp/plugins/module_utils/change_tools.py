@@ -194,6 +194,8 @@ class CvpChangeControlBuilder:
         ----------
         data: dict
             Provided data structure defining the Change
+        name: str
+            The name of the CC, coming from the module call
 
         Returns
         -------
@@ -477,54 +479,64 @@ class CvChangeControlTools():
         self.apiversion = self.__cv_client.apiversion
         
     def __index_cc__(self):
+        """
+        Index the known Change Controls, creating an internal list of tuples
+        ( Change Control Name, Change Control ID )
+
+        Parameters
+        ----------
+        None: 
+            Provided data structure defining the Change
+            
+        Returns
+        -------
+        None: 
+            
+        """
         MODULE_LOGGER.debug('Indexing Change Controls')
         self.__cc_index.clear()
         
         for entry in self.change_controls['data']:
             self.__cc_index.append( (entry['result']['value']['change']['name'], entry['result']['value']['key']['id']) )
 
-        
+        return None
             
     def _find_id_by_name(self, name):
+        """
+        Find the ID of a change control, by name
+
+        Parameters
+        ----------
+        name: str
+            The name of the CC
+
+        Returns
+        -------
+        cc_id: list
+            A list of matching change control IDs
+        """
         cc_id = []
         cc_id = list( filter(lambda x:name in x, self.__cc_index) )
         MODULE_LOGGER.debug('%d changes found' % len(cc_id))
         return cc_id
     
-    # This could be moved into cvp_facts_v3
-    def get_available_tasks(self, dev_filter=None, task_type='image'):
-        """
-        self.__cv_client.api.change_control_available_tasks should return a list of
-        tasks, which aren't assigned to any CCs already (broken, see https://github.com/aristanetworks/cvprac/issues/186).
-        
-        Currently the task can have a VIEW of either IMAGE or CONFIG (afaik)
-        Need to add more logic to avoid #186 for now - don't want to assign the same task to multiple CCs
-        
-        Note: The 'workOrderId' is usually referred to as the 'taskId' on most external contexts
-        """
-        MODULE_LOGGER.debug('Getting available tasks')
-        tasks = self.__cv_client.api.change_control_available_tasks()
-        if len(tasks) > 0:
-            filtered_tasks = []
-            for entry in tasks:
-                # this might be a bit biased towards my use case
-                if entry['data']['VIEW'] == task_type.upper():
-                    if dev_filter is not None:
-                        if dev_filter in entry['workOrderDetails']['netElementHostName']:
-                            filtered_tasks.append(entry)
-                    else:
-                        filtered_tasks.append(entry)
-                        
-            return filtered_tasks
-                
-        else:
-            return None
-        
+     
             
         
     def get_all_change_controls(self):
+        """
+        Get all change controls on CVP
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+
+        """
         cc_list = []
-        legacy = True
         MODULE_LOGGER.debug('Collecting Change controls')
         
         if self.apiversion < 3.0:
@@ -545,7 +557,19 @@ class CvChangeControlTools():
 
     
     def get_change_control(self, cc_id):
-        
+        """
+        Get a specific change control
+
+        Parameters
+        ----------
+        cc_id: str
+            The UUID of the Change Control in question
+
+        Returns
+        -------
+        change: dict
+            A dict describing the request change control
+        """
         MODULE_LOGGER.debug('Collecting change control: %s' % cc_id)
         if self.apiversion < 3.0:
             MODULE_LOGGER.debug('Using legacy API call')
