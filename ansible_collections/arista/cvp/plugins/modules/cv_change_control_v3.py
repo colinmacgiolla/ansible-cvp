@@ -93,7 +93,8 @@ def main():
         ansible_module=ansible_module,
         check_mode=ansible_module.check_mode
     )
-        
+    
+    MODULE_LOGGER.debug("Calling module action")    
     MODULE_LOGGER.debug(**ansible_module.params)
     result['changed'], result['data'], warnings = cv_cc.module_action(**ansible_module.params)
     MODULE_LOGGER.warning(warnings)
