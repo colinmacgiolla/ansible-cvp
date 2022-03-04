@@ -591,6 +591,7 @@ class CvChangeControlTools():
         data = dict()
         warnings = list()
         
+        MODULE_LOGGER.debug('Collecting all change controls')
         self.get_all_change_controls()
         
         if state == "get":
