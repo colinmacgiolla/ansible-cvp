@@ -226,6 +226,8 @@ class CvpChangeControlBuilder:
         for stage in data['stages']:
             if 'name' in stage:
                 defined_stages.append(stage['name'])
+            if 'mode' not in stage:
+                stage['mode'] = "series"
 
         # if a task/action is assigned to a stage that isn't created
         # assign it to the root stage
