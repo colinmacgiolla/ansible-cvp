@@ -235,6 +235,8 @@ class CvpChangeControlBuilder:
             if 'stage' in task:
                 if task['stage'] not in defined_stages:
                     task['stage'] = None
+            if 'task_id' in task and 'name' not in task:
+                task['name'] = "task"
 
         # if the key is provided, we are updating an existing CC
         if 'key' in data:
