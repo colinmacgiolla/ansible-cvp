@@ -32,14 +32,102 @@ description:
   - CloudVision Portal Change Control Module.
   - ''
 options:
-  - TODO
-
+  name:
+    description: The name of the change control. If not provided, one will be generated.
+    required: false
+    type: str
+  change:
+    description: A dict containuing the change control to be created/modified
+    required: true (if state == set)
+    type: dict
+    elements: dict
+  state:
+    description: Set if we should get, set/update, or remove the change control
+    required: false
+    default: get
+    choices: ['get','set','remove']
+    type: str
 
 '''
 
 EXAMPLES = r'''
 ---
-TODO
+- name: CVP Change Control Tests
+  hosts: cv_server
+  gather_facts: no
+  vars:
+    ansible_command_timeout: 1200
+    ansible_connect_timeout: 600
+    change:
+      name: Ansible playbook test change
+      notes: Created via playbook
+      activities:
+        - action: "Switch Healthcheck"
+          name: Switch1_healthcheck
+          device: DC1-Leaf1a
+          stage: Pre-Checks
+        - action: "Switch Healthcheck"
+          name: Switch1b_healthcheck
+          device: DC1-Leaf1b
+          stage: Pre-Checks
+        - task_id: "20"
+          stage: Leaf1a_upgrade
+        - task_id: "22"
+          stage: Leaf1b_upgrade
+      stages:
+        - name: Pre-Checks
+          mode: parallel
+        - name: Upgrades
+          modes: series
+        - name: Leaf1a_upgrade
+          parent: Upgrades
+        - name: Leaf1b_upgrade
+          parent: Upgrades
+
+
+  tasks:
+    - name: "Gather CVP change controls {{inventory_hostname}}"
+      arista.cvp.cv_change_control_v3:
+        state: get
+      register: cv_facts
+
+
+    - name: "Print out all change controls from {{inventory_hostname}}"
+      debug:
+        msg: "{{cv_facts}}"
+
+
+    - name: "Check CC structure"
+      debug:
+        msg: "{{change}}"
+
+
+    - name: "Create a change control on {{inventory_hostname}}"
+      arista.cvp.cv_change_control_v3:
+        state: set
+        change: "{{ change }}"
+
+    - name: "Get the created change control {{inventory_hostname}}"
+      arista.cvp.cv_change_control_v3:
+        state: get
+        name: change.name
+      register: cv_facts
+
+    - name: "Show the created CC from {{inventory_hostname}}"
+      debug:
+        msg: "{{cv_facts}}"
+
+
+    - name: "Delete the CC from {{inventory_hostname}}"
+      arista.cvp.cv_change_control_v3:
+        state: remove
+        name: change.name
+      register: cv_deleted
+
+    - name: "Show deleted CCs"
+      debug:
+        msg: "{{cv_deleted}}"
+
 '''
 
 # Required by Ansible and CVP
