@@ -586,11 +586,10 @@ class CvChangeControlTools():
         data = dict()
         warnings = list()
 
-        MODULE_LOGGER.debug('Collecting all change controls')
-        self.get_all_change_controls()
-
         if state == "show":
             if name is None and change_id is None:
+                MODULE_LOGGER.debug('Collecting all change controls')
+                self.get_all_change_controls()
                 return changed, {'change_controls': self.change_controls}, warnings
             else:
                 cc_list = []
@@ -600,6 +599,7 @@ class CvChangeControlTools():
                         cc_list.append(self.get_change_control(change))
 
                 else:
+                    self.get_all_change_controls()
                     cc_id_list = self._find_id_by_name(name)
                     for change in cc_id_list:
                         MODULE_LOGGER.debug('Found change for search: %s with ID: %s', name, change)
@@ -622,6 +622,7 @@ class CvChangeControlTools():
                 return changed, {'remove': []}, warnings
 
             elif name is not None:
+                self.get_all_change_controls()
                 cc_list = self._find_id_by_name(name)
                 if len(cc_list) == 0:
                     warnings.append("No matching change controls found for %s" % name)
