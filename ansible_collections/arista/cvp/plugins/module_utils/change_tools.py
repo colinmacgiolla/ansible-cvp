@@ -655,7 +655,16 @@ class CvChangeControlTools():
         elif state == "set" and self.__check_mode is False:
             changeControl = CvpChangeControlBuilder()
             changeControl.add_known_uuid([v[1] for v in self.__cc_index])
-            cc_structure = changeControl.build_cc(change, name)
+            
+            # Check that our generated CCID is not already in use, and if it is,
+            # add the UUID to the known list, and run again
+            while True:
+                cc_structure = changeControl.build_cc(change, name)
+                
+                if self.get_change_control(cc_structure['key']) is None:
+                    break
+                else:
+                    changeControl.add_known_uuid(cc_structure['key'])
 
             try:
                 self.__cv_client.post('/api/resources/changecontrol/v1/ChangeControlConfig', data=cc_structure)
