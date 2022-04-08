@@ -296,7 +296,6 @@ class CvpChangeControlBuilder:
                 self.ChangeControl['change']['stages']['values'][parentId]['rows']['values'].append({'values': [ownId]})
             else:
                 self.ChangeControl['change']['stages']['values'][parentId]['rows']['values'][0]['values'].append(ownId)
-
         else:
             self.ChangeControl['change']['stages']['values'][parentId]['rows']['values'].append({'values': [ownId]})
 
@@ -571,12 +570,21 @@ class CvChangeControlTools():
         MODULE_LOGGER.debug('Collecting change control: %s', cc_id)
         if self.apiversion < 3.0:
             MODULE_LOGGER.debug('Using legacy API call')
-            change = self.__cv_client.api.get_change_control_info(cc_id)
+            try:
+                change = self.__cv_client.api.get_change_control_info(cc_id)
+            except Exception:
+                MODULE_LOGGER.error('Change control with id %s not found' % cc_id)
+                change = None
         else:
             # Rewrite on cvprac > 1.0.7
             params = 'key.id={0}'.format(cc_id)
             cc_url = '/api/resources/changecontrol/v1/ChangeControl?' + params
-            change = self.__cv_client.get(cc_url)
+            try:
+                change = self.__cv_client.get(cc_url)
+            except Exception:
+                MODULE_LOGGER.error('Change control with id %s not found' % cc_id)
+                change = None
+                
 
         return change
 
