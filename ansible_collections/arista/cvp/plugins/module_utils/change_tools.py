@@ -659,13 +659,17 @@ class CvChangeControlTools():
             # Check that our generated CCID is not already in use, and if it is,
             # add the UUID to the known list, and run again
             while True:
+                MODULE_LOGGER.debug("Creating change control structure")
                 cc_structure = changeControl.build_cc(change, name)
                 if self.get_change_control(cc_structure['key']) is None:
+                    MODULE_LOGGER.debug("Change ID: %s was not found, moving to next step", cc_list)
                     break
                 else:
+                    MODULE_LOGGER.debug("Change ID: %s was already known. Adding to list and running again", cc_list)
                     changeControl.add_known_uuid(cc_structure['key'])
 
             try:
+                MODULE_LOGGER.debug("Calling on CVP to create change")
                 self.__cv_client.post('/api/resources/changecontrol/v1/ChangeControlConfig', data=cc_structure)
                 changed = True
                 data = cc_structure['key']
