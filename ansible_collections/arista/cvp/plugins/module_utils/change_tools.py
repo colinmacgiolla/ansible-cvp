@@ -493,7 +493,10 @@ class CvChangeControlTools():
         self.__cc_index.clear()
 
         for entry in self.change_controls['data']:
-            self.__cc_index.append((entry['result']['value']['change']['name'], entry['result']['value']['key']['id']))
+            if 'name' not in entry['result']['value']['change']['name']:
+                self.__cc_index.append(('Undefined', entry['result']['value']['key']['id']))
+            else:
+                self.__cc_index.append((entry['result']['value']['change']['name'], entry['result']['value']['key']['id']))
 
         return None
 
