@@ -67,10 +67,13 @@ EXAMPLES = r'''
       activities:
         - action: "Switch Healthcheck"
           name: Switch1_healthcheck
-          device: SERIAL_Leaf1a
+          arguments:
+            - name: DeviceID
+              value: <device serial number>
           stage: Pre-Checks
         - action: "Switch Healthcheck"
-          device: SERIAL_Leaf1b
+            - name: DeviceID
+              value: <device serial number>
           stage: Pre-Checks
         - task_id: "20"
           stage: Leaf1a_upgrade
