@@ -111,17 +111,17 @@ class CvpChangeControlBuilder:
                 stage: Stage2
               - action: "Switch Healthcheck"
                 name: "Switch1_health"
-                device: DC1-Leaf1a
+                device: SERIAL_1
                 stage: Stage0
 
               - action: "Switch Healthcheck"
                 name: "Switch1_health"
-                device: switch1
+                device: SERIAL_1
                 stage: Stage1b
 
               - action: "Switch Healthcheck"
                 name: "Spine 1 Health Check"
-                device: DC1-SPINE1
+                device: SERIAL_2
                 stage: Stage1b
             stages:
               - name: Stage0
@@ -423,7 +423,7 @@ class CvpChangeControlBuilder:
 
         return None
 
-    def _create_action(self, name, action, stage, deviceID):
+    def _create_action(self, name, action, stage, deviceId):
         """
         Create a task within the Change Control
 
@@ -450,12 +450,12 @@ class CvpChangeControlBuilder:
         task['action']['name'] = action
         task['action']['args'] = {}
         task['action']['args']['values'] = {}
-        task['action']['args']['values']['DeviceID'] = deviceID
+        task['action']['args']['values']['DeviceID'] = deviceId
         task['name'] = name
 
-        cardID = self.__genID__()
-        self.ChangeControl['change']['stages']['values'][cardID] = task
-        self.__attachThing(cardID, stage)
+        cardId = self.__genID__()
+        self.ChangeControl['change']['stages']['values'][cardId] = task
+        self.__attachThing(cardId, stage)
 
         return None
 
