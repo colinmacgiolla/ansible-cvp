@@ -157,7 +157,7 @@ class CvpChangeControlBuilder:
             if 'task_id' in action:
                 self._create_task(action['name'], action['task_id'], action['stage'])
             else:
-                self._create_action(action['name'], action['action'], action['stage'], action['device'])
+                self._create_action(action['name'], action['action'], action['stage'], action['device'], action['arguments'] )
 
         return self.ChangeControl
 
@@ -235,6 +235,10 @@ class CvpChangeControlBuilder:
                 task['name'] += task['action']
                 task['name'] += "_"
                 task['name'] += task['device']
+            
+            # Allow for optional Custom Action arguments to be passed
+            if 'action' in task and 'arguments' not in task:
+                task['arguments'] = None
 
         # if the key is provided, we are updating an existing CC
         if 'key' in self._data:
@@ -423,7 +427,7 @@ class CvpChangeControlBuilder:
 
         return None
 
-    def _create_action(self, name, action, stage, deviceId):
+    def _create_action(self, name, action, stage, deviceId, arguments=None):
         """
         Create a task within the Change Control
 
@@ -437,6 +441,8 @@ class CvpChangeControlBuilder:
             The name of the stage that this task is to be assigned to
         deviceId: Str
             The serial number of the device to which the action is to be done
+        arguments: Dict
+            Optional - pass custom arguments to the action
 
 
         Returns
@@ -452,6 +458,13 @@ class CvpChangeControlBuilder:
         task['action']['args']['values'] = {}
         task['action']['args']['values']['DeviceID'] = deviceId
         task['name'] = name
+        
+        for k,v in arguments:
+            if k == 'DeviceID':
+                MODULE_LOGGER.warning('%s is a reserved key - failed to map %s on %s', k, v, deviceId)
+                pass
+            else:
+                task['action']['args']['values'][k] = v
 
         cardId = self.__genID__()
         self.ChangeControl['change']['stages']['values'][cardId] = task
