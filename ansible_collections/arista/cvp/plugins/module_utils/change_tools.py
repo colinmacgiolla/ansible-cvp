@@ -241,7 +241,7 @@ class CvpChangeControlBuilder:
                 task['name'] += task['action']
                 task['name'] += "_"
                 task['name'] += task['device']
-            
+
             # Allow for optional Custom Action arguments to be passed
             if 'action' in task and 'arguments' not in task:
                 task['arguments'] = None
@@ -447,8 +447,8 @@ class CvpChangeControlBuilder:
             The name of the stage that this task is to be assigned to
         arguments: Dict
             Optional - pass custom arguments to the action
-            The 'DeviceID' key (serial number) is used, by convention, for actions that are applied 
-            to a specific device 
+            The 'DeviceID' key (serial number) is used, by convention, for actions that are applied
+            to a specific device
 
 
         Returns
@@ -463,7 +463,7 @@ class CvpChangeControlBuilder:
         task['action']['args'] = {}
         task['action']['args']['values'] = {}
         task['name'] = name
-        
+
         if arguments is not None:
             for entry in arguments:
                 task['action']['args']['values'][entry['name']] = entry['value']

@@ -89,13 +89,11 @@ EXAMPLES = r'''
         - name: Leaf1b_upgrade
           parent: Upgrades
 
-
   tasks:
     - name: "Gather CVP change controls {{inventory_hostname}}"
       arista.cvp.cv_change_control_v3:
         state: show
       register: cv_facts
-
 
     - name: "Print out all change controls from {{inventory_hostname}}"
       debug:
