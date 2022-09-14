@@ -1,0 +1,35 @@
+---
+- name: CVP Change Control Example
+  hosts: cv_server
+  gather_facts: no
+  vars:
+
+  tasks:
+    - name: Ansible playbook test change
+      notes: Created via playbook
+      activities:
+        - action: "Switch Healthcheck"
+          name: Switch1_healthcheck
+          arguments:
+            - name: DeviceID
+              value: SERIAL_NUMBER
+          stage: Pre-Checks
+        - action: "Switch Healthcheck"
+          name: Switch1b_healthcheck
+          arguments:
+            - name: DeviceID
+              value: SERIAL_NUMBER
+          stage: Pre-Checks
+        - task_id: "20"
+          stage: Leaf1a_upgrade
+        - task_id: "22"
+          stage: Leaf1b_upgrade
+      stages:
+        - name: Pre-Checks
+          mode: parallel
+        - name: Upgrades
+          modes: series
+        - name: Leaf1a_upgrade
+          parent: Upgrades
+        - name: Leaf1b_upgrade
+          parent: Upgrades
